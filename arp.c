@@ -1,7 +1,10 @@
 #include <arp.h>
 #include <tun_if.h>
+#include <util.h>
 
 extern struct inet_if* device;
+
+extern void handle_ip_packet(struct eth_frame* eth_hdr);
 
 static inline struct arp_table_entry* find_arp_entry(struct arp_packet* packet){
   struct arp_inet* data = (struct arp_inet*)packet->addr_data;
@@ -41,7 +44,7 @@ void send_arp_reply(struct arp_packet* packet, uint8_t* src, uint8_t* dest){
   
   write(device->dev_fd, pkt_buf, MAX_ARP_SIZE + ETH_FRAME_SIZE);
   #ifdef DEBUG
-  printf("SENT:\n");
+  LOG_DEBUG("SENT:");
   print_packet(pkt_buf, MAX_ARP_SIZE + ETH_FRAME_SIZE);
   #endif
 }
@@ -88,6 +91,7 @@ int handle_eth_frame(struct eth_frame* frame){
   case(ETH_PROTO_RARP):
     break;
   case(ETH_PROTO_IP):
+    handle_ip_packet(frame);
     break;
   default:
     // TODO logging za neimplementirani protokol

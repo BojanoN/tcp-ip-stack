@@ -9,5 +9,10 @@ all:
 	$(CC) $(CFLAGS) -c $(SOURCE)
 	$(CC) $(OBJ) -o $(OUT_FILE)
 
+debug:
+	$(CC) -g -DDEBUG $(CFLAGS) -c $(SOURCE)
+	$(CC) $(OBJ) -o $(OUT_FILE)
+
+
 clean:
 	- rm -f $(OUT_FILE) *.o

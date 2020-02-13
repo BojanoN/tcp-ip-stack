@@ -1,9 +1,10 @@
 #include <malloc.h>
 #include <arpa/inet.h>
+#include <assert.h>
 
 #include <ip.h>
 #include <icmp.h>
-
+#include <util.h>
 
 extern struct inet_if* device;
 
@@ -42,26 +43,37 @@ uint16_t ip_checksum(struct ip_hdr* hdr){
   uint32_t len = hdr->ihl << 1;
   uint16_t* arr = (uint16_t *)hdr;
 
+  LOG_DEBUG("Old checksum: %u", hdr->checksum);
+#ifdef DEBUG
+  uint16_t old_chksum = ntohs(hdr->checksum);
+#endif
   hdr->checksum = 0;
 
   while(len > 0){
     sum += *arr++;
+    len--;
   }
 
   sum = (sum>>16) + (sum & 0xffff);
   sum += (sum>>16);
 
-  return (~sum);
+  LOG_DEBUG("Calculated checksum: %u", (uint16_t)(~sum));
+
+#ifdef DEBUG
+  assert((uint16_t)(~sum) == old_chksum);
+#endif
+
+  return (uint16_t)(~sum);
 }
 
-void handle_ip_packet(struct ip_hdr* hdr){
+void handle_ip_packet(struct eth_frame* eth_hdr){
+
+  struct ip_hdr* hdr = (struct ip_hdr*) &eth_hdr->data;
 
   uint16_t checksum = ntohs(hdr->checksum);
   uint32_t id = ntohl(hdr->id);
 
-#ifdef DEBUG
-  printf("Packet checksum: %d\n",ip_checksum(hdr));
-#endif
+  LOG_DEBUG("Packet checksum: %d\n",ip_checksum(hdr));
 
   if(checksum != ip_checksum(hdr)){
     printf("Invalid packet checksum, packet with ID: %d is being dropped...\n", id);

@@ -33,18 +33,15 @@ int main(void){
 
   signal(SIGINT, handler);
 
-  #ifdef DEBUG
-  printf("DEV_FD: %d\n", iface.dev_fd);
-  printf("DEV_NAME: %s\n", iface.name);
-  #endif
+  LOG_DEBUG("DEV_FD: %d\n", iface.dev_fd);
+  LOG_DEBUG("DEV_NAME: %s\n", iface.name);
+
   arp_init(&iface);
   ip_init(&iface);
 
   while(1){
     recvd = read(iface.dev_fd, packet_buff, MTU);
-    #ifdef DEBUG
-    printf("BYTES_READ: %d\n", recvd);
-    #endif
+    LOG_DEBUG("BYTES_READ: %d\n", recvd);
     print_packet(packet_buff, recvd);
     handle_eth_frame((struct eth_frame *) packet_buff);
   }

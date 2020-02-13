@@ -1,5 +1,5 @@
 #include <tun_if.h>
-
+#include <util.h>
 
 struct inet_if* device = NULL;
 
@@ -37,6 +37,9 @@ static int tun_free(int dev_fd){
 }
 
 int if_init(struct inet_if* iface, char* hw_addr, char* ip_addr){
+
+  LOG_DEBUG("Initializing TAP device...");
+
   char* p = strdup(hw_addr);
   char* tok;
   char cmd_buf[64];
@@ -62,11 +65,19 @@ int if_init(struct inet_if* iface, char* hw_addr, char* ip_addr){
     iface->hw_addr[i++] = num;
   }
   iface->mtu = 1500;
+  device = iface;
+
+  LOG_DEBUG("Initialized TAP device!");
+
   return 0;
 }
 
 void if_free(struct inet_if* iface){
+  LOG_DEBUG("Deallocating TAP device...");
+
   tun_free(iface->dev_fd);
   memset(&iface->name, 0, IFNAMSIZ);
   memset(&iface->hw_addr, 0, MAC_ADDR_SIZE);
+
+  LOG_DEBUG("Deallocated TAP device.");
 }
