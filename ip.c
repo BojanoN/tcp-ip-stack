@@ -28,42 +28,34 @@ int ip_init(){
 }
 
 void ip_exit(){
+  LOG_DEBUG("Deallocating IP layer..");
   device = NULL;
   for(int i=0; i<MAX_PACKETS; i++){
     free(pkt_buffer[i]);
   }
+  LOG_DEBUG("Deallocated IP layer");
 }
 
 /*
  * Compute IPv4 header checksum.
- * Zeroes checksum field.
  */
-uint16_t ip_checksum(struct ip_hdr* hdr){
+uint16_t ip_checksum(void* hdr, uint8_t len){
   uint32_t sum = 0;
-  uint32_t len = hdr->ihl << 1;
-  uint16_t* arr = (uint16_t *)hdr;
+  uint16_t* arr = hdr;
 
-  LOG_DEBUG("Old checksum: %u", hdr->checksum);
-#ifdef DEBUG
-  uint16_t old_chksum = ntohs(hdr->checksum);
-#endif
-  hdr->checksum = 0;
-
-  while(len > 0){
+  while(len > 1){
     sum += *arr++;
-    len--;
+    len -= sizeof(uint16_t);
+  }
+
+  if(len > 0){
+    sum += *((uint8_t *)arr);
   }
 
   sum = (sum>>16) + (sum & 0xffff);
   sum += (sum>>16);
 
-  LOG_DEBUG("Calculated checksum: %u", (uint16_t)(~sum));
-
-#ifdef DEBUG
-  assert((uint16_t)(~sum) == old_chksum);
-#endif
-
-  return (uint16_t)(~sum);
+  return (~sum);
 }
 
 void handle_ip_packet(struct eth_frame* eth_hdr){
@@ -73,10 +65,14 @@ void handle_ip_packet(struct eth_frame* eth_hdr){
   uint16_t checksum = ntohs(hdr->checksum);
   uint32_t id = ntohl(hdr->id);
 
-  LOG_DEBUG("Packet checksum: %d\n",ip_checksum(hdr));
+  LOG_DEBUG("Packet checksum: %u", checksum);
 
-  if(checksum != ip_checksum(hdr)){
-    printf("Invalid packet checksum, packet with ID: %d is being dropped...\n", id);
+  uint16_t calc_sum = ip_checksum(hdr, hdr->ihl << 2);
+
+  LOG_DEBUG("Calculated checksum: %u", calc_sum);
+
+  if(calc_sum != 0){
+    printf("Invalid packet checksum, packet with ID: %u is being dropped...\n", id);
     return;
   }
 

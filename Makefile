@@ -2,7 +2,7 @@ OUT_FILE = stack
 CC = gcc
 SOURCE = $(wildcard *.c)
 OBJ = ${SOURCE:.c=.o}
-CFLAGS = -g -I ./include
+CFLAGS = -I ./include
 
 
 all:
